@@ -17,14 +17,18 @@ solution1 measurements = gamma*epsilon
         bitSums = foldr (zipWith (+)) accInit measurements
         accInit = (take.length.head) measurements (repeat 0)
 
-solution2 measurements = toDecimal (oxygen (mostCommonBit) []) * toDecimal (oxygen (leastCommonBit) [])
+solution2 m = (getRating m mostCommonBit) * (getRating m leastCommonBit)
     where
-        oxygen bitSelector prefix
-            | length (matches prefix) == 1 = head (matches prefix)
-            | length prefix == length (head measurements) = prefix
-            | otherwise = oxygen (bitSelector) (prefix ++ [bitSelector prefix])
-        mostCommonBit prefix = head (drop (div (length (firstBitOfMatches prefix)) 2) (firstBitOfMatches prefix))
-        leastCommonBit prefix = 1 - (mostCommonBit prefix)
-        matches prefix = filter (prefix `isPrefixOf`) measurements
-        firstBitOfMatches prefix = sort (map (head . (drop (length prefix))) (matches prefix))
+        mostCommonBit xs = if 2*sum xs >= length xs then 1 else 0
+        leastCommonBit xs = 1 - (mostCommonBit xs)
+
+getRating measurements searchStrategy = toDecimal (getRatingHelper [] searchStrategy)
+    where
+        getRatingHelper prefix searchStrategy =
+            if length matches == 1
+            then head matches
+            else getRatingHelper (prefix ++ [searchStrategy nextColumn]) searchStrategy
+                where
+                    matches = filter (prefix `isPrefixOf`) measurements
+                    nextColumn = map (head.(drop (length prefix))) matches
         toDecimal bits = foldr (\x acc -> 2*acc + x) 0 (reverse bits)
