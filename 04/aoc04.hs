@@ -20,8 +20,8 @@ solution drawing boards = "Quickest board has score " ++ show (chooseBoard drawi
 chooseBoard drawing boards strategy = sum remainingNumbers * last drawnNumbers
     where
         drawnNumbers = take (chosenFinishTurn+1) drawing
-        remainingNumbers = boards !! (chosenBoard-1) \\ drawnNumbers
-        chosenBoard = 1 + elemIndex' chosenFinishTurn finishTurnByBoard
+        remainingNumbers = boards !! chosenBoard \\ drawnNumbers
+        chosenBoard = elemIndex' chosenFinishTurn finishTurnByBoard
         chosenFinishTurn = strategy finishTurnByBoard 
         finishTurnByBoard = map finishTurn boards
         finishTurn board = minimum (map finishTurnRow (boardRows board))
