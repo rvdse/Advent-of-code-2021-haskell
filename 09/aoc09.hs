@@ -3,38 +3,30 @@ import qualified Data.Set as Set
 
 main = interact solve
 
---solve input = "Problem 1: " ++ show (sum (map (\pt -> 1 + getHeight heightmap pt) (filter (isLowPoint heightmap) allPts))) ++ "\n"
-solve input = "Problem 1: " ++ show (sum (map riskLevel allLowPts)) ++ "\n"
-           ++ "Problem 2: " ++ show ((product.(take 3).reverse.sort) (map (getBasinSize heightmap) allLowPts)) ++ "\n"
+solve input = "Problem 1: " ++ show (sum (map riskLevel lowPts)) ++ "\n"
+           ++ "Problem 2: " ++ show ((product.(take 3).reverse.sort) (map ((Set.size).(getBasin heightmap)) lowPts)) ++ "\n"
     where
         riskLevel p = 1 + getHeight heightmap p
-        allLowPts = filter (isLowPoint heightmap) allPts
-        allPts = [(x, y) | y <- ys, x <- xs]
-        xs = [0..(length (head heightmap) -1)]
-        ys = [0..(length heightmap - 1)]
+        lowPts = filter (isLowPoint heightmap) allPts
+        allPts = [(x, y) | y <- [0..length heightmap-1], x <- [0..length (head heightmap)-1]]
         heightmap = lines input
 
-isLowPoint :: [String] -> (Int, Int) -> Bool
-isLowPoint heightmap (x, y) = h < hN && h < hW && h < hE && h < hS
+within heightmap (x, y) = x>=0 && x<length (head heightmap) && y>=0 && y<length heightmap
+getHeight heightmap (x, y) = read [((heightmap !! y) !! x)] :: Int
+
+isLowPoint heightmap (x, y) = all higher surroundingPts
     where
-        h = getHeight heightmap (x, y)
-        hN = getHeight heightmap (x, y-1)
-        hW = getHeight heightmap (x-1, y)
-        hE = getHeight heightmap (x+1, y)
-        hS = getHeight heightmap (x, y+1)
+        surroundingPts = filter (within heightmap) [(x, y-1), (x-1, y), (x+1, y), (x, y+1)]
+        higher (x', y') = getHeight heightmap (x', y') > getHeight heightmap (x, y)
 
-getHeight :: [String] -> (Int, Int) -> Int
-getHeight heightmap (x, y)
-    | x < 0 || x >= length (head heightmap) = 999
-    | y < 0 || y >= length heightmap = 999
-    | otherwise = read [((heightmap !! y) !! x)] :: Int
 
-getBasinSize heightmap (x,y) = Set.size (getBasin heightmap (x,y))
-
-getBasin heightmap (x,y)
-    | getHeight heightmap (x,y) >= 9 = Set.empty
-    | otherwise = Set.union (Set.singleton (x,y))
-                 (Set.union (if getHeight heightmap (x, y-1) > getHeight heightmap (x,y) then getBasin heightmap (x, y-1) else Set.empty)
-                 (Set.union (if getHeight heightmap (x-1, y) > getHeight heightmap (x,y) then getBasin heightmap (x-1, y) else Set.empty)
-                 (Set.union (if getHeight heightmap (x+1, y) > getHeight heightmap (x,y) then getBasin heightmap (x+1, y) else Set.empty)
-                            (if getHeight heightmap (x, y+1) > getHeight heightmap (x,y) then getBasin heightmap (x, y+1) else Set.empty))))
+getBasin heightmap (x,y) = Set.union (Set.singleton (x,y))
+         (Set.union (if relevant (x, y-1) then getBasin heightmap (x, y-1) else Set.empty)
+         (Set.union (if relevant (x-1, y) then getBasin heightmap (x-1, y) else Set.empty)
+         (Set.union (if relevant (x+1, y) then getBasin heightmap (x+1, y) else Set.empty)
+                    (if relevant (x, y+1) then getBasin heightmap (x, y+1) else Set.empty))))
+    where
+        relevant (x', y') = valid (x', y') && higher (x', y') && (not.tooHigh) (x', y')
+        valid (x', y') = within heightmap (x', y')
+        higher (x', y') = getHeight heightmap (x', y') > getHeight heightmap (x, y)
+        tooHigh (x', y') = getHeight heightmap (x', y') >= 9
